@@ -1,17 +1,60 @@
-# Ram_tes (systest)
+# Ram_tes — `systest`
 
-A high-performance command-line benchmarking utility for RAM and Storage (UFS/SSD).
+> Utilitas benchmarking RAM dan Storage (UFS/SSD) berkinerja tinggi untuk command-line.
 
-## 🚀 Auto-Installation
-Download and install the latest version automatically based on your system:
+---
 
-curl -sL https://api.github.com/repos/Genta-ta/Ram_tes/releases/latest | grep "browser_download_url" | grep "$(uname -m|grep -q aarch64 && echo termux || echo ubuntu)" | cut -d '"' -f 4 | xargs curl -LO && dpkg -i *$(uname -m|grep -q aarch64 && echo termux || echo ubuntu).deb && rm *.deb
 
-## 🛠️ Local Compilation
-To build manually:
-- make
-- make clean
+> - Arsitektur `aarch64` (ARM 64-bit) → paket **Termux**
+> - Arsitektur lainnya (x86_64, dll.) → paket **Ubuntu**
 
-## 📊 Usage Guide
-- **RAM Test**: `systest ram [Size_in_MB] [Loops]`
-- **Storage Test**: `systest storage [Size_in_MB]`
+---
+
+## 🛠️ Kompilasi Lokal
+
+```bash
+make        # Build binary
+make clean  # Hapus hasil build
+```
+
+---
+
+## 🚀 Cara Penggunaan
+
+### Test RAM
+
+```bash
+systest ram [Ukuran_MB] [Jumlah_Loop]
+```
+
+| Parameter     | Deskripsi                          | Contoh |
+|---------------|------------------------------------|--------|
+| `Ukuran_MB`   | Ukuran blok memori yang diuji (MB) | `512`  |
+| `Jumlah_Loop` | Berapa kali pengujian diulang      | `10`   |
+
+**Contoh:** `systest ram 512 10`
+→ Uji RAM 512 MB sebanyak 10 putaran
+
+---
+
+### Test Storage (UFS/SSD)
+
+```bash
+systest storage [Ukuran_MB]
+```
+
+| Parameter   | Deskripsi                            | Contoh |
+|-------------|--------------------------------------|--------|
+| `Ukuran_MB` | Ukuran data baca/tulis saat uji (MB) | `1024` |
+
+**Contoh:** `systest storage 1024`
+→ Uji baca/tulis storage dengan data 1024 MB
+
+---
+
+## 📋 Platform yang Didukung
+
+| Platform         | Arsitektur | Paket         |
+|------------------|------------|---------------|
+| Android (Termux) | `aarch64`  | `*termux.deb` |
+| Linux (Ubuntu)   | `x86_64`   | `*ubuntu.deb` |
