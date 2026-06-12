@@ -1,0 +1,50 @@
+name: Build arm64
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Cross-Compiler Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu dpkg make
+
+      - name: Setup Packaging Workspace
+        run: |
+          mkdir -p stage/DEBIAN
+          mkdir -p stage/data/data/com.termux/files/usr/bin
+
+      - name: Build Binary via Makefile (Cross-Compile)
+        run: |
+          make CC=aarch64-linux-gnu-gcc LDFLAGS="-static" TARGET=stage/data/data/com.termux/files/usr/bin/systest
+
+      - name: Create Package Descriptor
+        run: |
+          cat << EOF > stage/DEBIAN/control
+          Package: systest
+          Version: 1.0.0
+          Architecture: arm64
+          Maintainer: Genta <genta@example.com>
+          Description: Modular high-performance RAM and UFS storage benchmark utility.
+          EOF
+
+      - name: Generate Debian Package
+        run: |
+          dpkg-deb --build stage systest_1.0.0_arm64.deb
+
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: systest-deb-package
+          path: systest_1.0.0_arm64.deb
+          if-no-files-found: error
+

@@ -1,0 +1,78 @@
+name: Build Universal Packages
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-universal:
+    runs-on: ubuntu-latest
+    strategy:
+      # Matrix defines the parallel build jobs
+      matrix:
+        platform: [termux-arm64, ubuntu-x86_64]
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Compilers and Build Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -p -y dpkg make
+          if [ "${{ matrix.platform }}" = "termux-arm64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          fi
+
+      - name: Build and Package Stage
+        run: |
+          # Create a clean staging directory for Debian structure
+          mkdir -p stage/DEBIAN
+          
+          if [ "${{ matrix.platform }}" = "termux-arm64" ]; then
+            # 1. TERMUX CONFIGURATION (ARM64)
+            BIN_DIR="stage/data/data/com.termux/files/usr/bin"
+            mkdir -p "$BIN_DIR"
+            
+            # Cross-compile with static linking for Android
+            make CC=aarch64-linux-gnu-gcc LDFLAGS="-static" TARGET="$BIN_DIR/systest"
+            
+            # Control file for Termux
+            cat << EOF > stage/DEBIAN/control
+            Package: systest
+            Version: 1.0.0
+            Architecture: arm64
+            Maintainer: Genta <genta@example.com>
+            Description: High-performance RAM and storage benchmark utility optimized for Termux.
+            EOF
+            
+            dpkg-deb --build stage systest_1.0.0_arm64_termux.deb
+            
+          else
+            # 2. UBUNTU CONFIGURATION (X86_64 / AMD64)
+            BIN_DIR="stage/usr/bin"
+            mkdir -p "$BIN_DIR"
+            
+            # Native compile for Linux x86_64
+            make CC=gcc TARGET="$BIN_DIR/systest"
+            
+            # Control file for standard Linux (Debian uses 'amd64' architecture name)
+            cat << EOF > stage/DEBIAN/control
+            Package: systest
+            Version: 1.0.0
+            Architecture: amd64
+            Maintainer: Genta <genta@example.com>
+            Description: High-performance RAM and storage benchmark utility for Ubuntu/Debian x86_64.
+            EOF
+            
+            dpkg-deb --build stage systest_1.0.0_amd64_ubuntu.deb
+          fi
+
+      - name: Upload Finished Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: systest-${{ matrix.platform }}
+          path: "*.deb"
+          if-no-files-found: error
+
